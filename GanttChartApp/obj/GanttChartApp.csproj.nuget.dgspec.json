@@ -44,6 +44,12 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
+          "dependencies": {
+            "Syncfusion.Blazor.Gantt": {
+              "target": "Package",
+              "version": "[30.1.40, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

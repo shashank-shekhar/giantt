@@ -1,0 +1,187 @@
+@page "/gantt"
+@using Syncfusion.Blazor.Gantt
+@using System.ComponentModel.DataAnnotations
+@rendermode InteractiveServer
+
+<PageTitle>Gantt Chart</PageTitle>
+
+<h1>Gantt Chart Manager</h1>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="CreateNewChart">Create New Chart</button>
+    <button class="btn btn-secondary" @onclick="SaveChart">Save Chart</button>
+    <button class="btn btn-info" @onclick="LoadChart">Load Chart</button>
+</div>
+
+<div class="mb-3">
+    <label for="chartName" class="form-label">Chart Name:</label>
+    <input type="text" class="form-control" id="chartName" @bind="ChartName" />
+</div>
+
+<div class="mb-3">
+    <button class="btn btn-success" @onclick="AddTask">Add Task</button>
+</div>
+
+<SfGantt DataSource="@TaskCollection" 
+         Height="600px" 
+         Width="100%"
+         @bind-SelectedRowIndex="SelectedRowIndex"
+         AllowSelection="true"
+         AllowSorting="true"
+         AllowReordering="true"
+         AllowResizing="true"
+         ShowColumnMenu="true"
+         AllowFiltering="true"
+         ProjectStartDate="ProjectStart"
+         ProjectEndDate="ProjectEnd">
+    <GanttTaskFields Id="TaskId" 
+                     Name="TaskName" 
+                     StartDate="StartDate" 
+                     EndDate="EndDate" 
+                     Duration="Duration" 
+                     Progress="Progress" 
+                     ParentID="ParentId">
+    </GanttTaskFields>
+    <GanttColumns>
+        <GanttColumn Field="TaskId" HeaderText="ID" Width="80"></GanttColumn>
+        <GanttColumn Field="TaskName" HeaderText="Task Name" Width="250"></GanttColumn>
+        <GanttColumn Field="StartDate" HeaderText="Start Date" Width="150"></GanttColumn>
+        <GanttColumn Field="EndDate" HeaderText="End Date" Width="150"></GanttColumn>
+        <GanttColumn Field="Duration" HeaderText="Duration" Width="100"></GanttColumn>
+        <GanttColumn Field="Progress" HeaderText="Progress" Width="100"></GanttColumn>
+    </GanttColumns>
+    <GanttEditSettings AllowAdding="true" 
+                       AllowEditing="true" 
+                       AllowDeleting="true" 
+                       AllowTaskbarEditing="true"
+                       ShowDeleteConfirmDialog="true">
+    </GanttEditSettings>
+    <GanttEvents TValue="TaskData" 
+                 OnActionComplete="ActionCompleteHandler"
+                 OnTaskbarEdited="TaskbarEditedHandler">
+    </GanttEvents>
+</SfGantt>
+
+@code {
+    private List<TaskData> TaskCollection = new();
+    private string ChartName = "My Gantt Chart";
+    private int SelectedRowIndex = -1;
+    private DateTime ProjectStart = DateTime.Today;
+    private DateTime ProjectEnd = DateTime.Today.AddDays(30);
+
+    protected override void OnInitialized()
+    {
+        LoadDefaultTasks();
+    }
+
+    private void LoadDefaultTasks()
+    {
+        TaskCollection = new List<TaskData>()
+        {
+            new TaskData() { TaskId = 1, TaskName = "Project Planning", StartDate = DateTime.Today, EndDate = DateTime.Today.AddDays(5), Duration = "5 days", Progress = 100, ParentId = null },
+            new TaskData() { TaskId = 2, TaskName = "Define Requirements", StartDate = DateTime.Today, EndDate = DateTime.Today.AddDays(2), Duration = "2 days", Progress = 100, ParentId = 1 },
+            new TaskData() { TaskId = 3, TaskName = "Create Timeline", StartDate = DateTime.Today.AddDays(2), EndDate = DateTime.Today.AddDays(5), Duration = "3 days", Progress = 50, ParentId = 1 },
+            new TaskData() { TaskId = 4, TaskName = "Development Phase", StartDate = DateTime.Today.AddDays(5), EndDate = DateTime.Today.AddDays(20), Duration = "15 days", Progress = 30, ParentId = null },
+            new TaskData() { TaskId = 5, TaskName = "Frontend Development", StartDate = DateTime.Today.AddDays(5), EndDate = DateTime.Today.AddDays(12), Duration = "7 days", Progress = 60, ParentId = 4 },
+            new TaskData() { TaskId = 6, TaskName = "Backend Development", StartDate = DateTime.Today.AddDays(8), EndDate = DateTime.Today.AddDays(15), Duration = "7 days", Progress = 20, ParentId = 4 },
+            new TaskData() { TaskId = 7, TaskName = "Testing", StartDate = DateTime.Today.AddDays(15), EndDate = DateTime.Today.AddDays(20), Duration = "5 days", Progress = 0, ParentId = 4 }
+        };
+    }
+
+    private void CreateNewChart()
+    {
+        TaskCollection.Clear();
+        ChartName = "New Gantt Chart";
+        StateHasChanged();
+    }
+
+    private void AddTask()
+    {
+        var newId = TaskCollection.Count > 0 ? TaskCollection.Max(t => t.TaskId) + 1 : 1;
+        var newTask = new TaskData()
+        {
+            TaskId = newId,
+            TaskName = $"New Task {newId}",
+            StartDate = DateTime.Today,
+            EndDate = DateTime.Today.AddDays(1),
+            Duration = "1 day",
+            Progress = 0,
+            ParentId = null
+        };
+        TaskCollection.Add(newTask);
+        StateHasChanged();
+    }
+
+    private async Task SaveChart()
+    {
+        try
+        {
+            var chartId = Guid.NewGuid().ToString();
+            var chartData = new GanttChartData
+            {
+                Id = chartId,
+                Name = ChartName,
+                Tasks = TaskCollection,
+                CreatedDate = DateTime.Now,
+                ProjectStart = ProjectStart,
+                ProjectEnd = ProjectEnd
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(chartData);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", $"gantt_chart_{chartId}", json);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "gantt_chart_current", chartId);
+            
+            await JSRuntime.InvokeVoidAsync("alert", $"Chart saved successfully! Chart ID: {chartId}");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error saving chart: {ex.Message}");
+        }
+    }
+
+    private async Task LoadChart()
+    {
+        try
+        {
+            var currentChartId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "gantt_chart_current");
+            if (!string.IsNullOrEmpty(currentChartId))
+            {
+                var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", $"gantt_chart_{currentChartId}");
+                if (!string.IsNullOrEmpty(json))
+                {
+                    var chartData = System.Text.Json.JsonSerializer.Deserialize<GanttChartData>(json);
+                    if (chartData != null)
+                    {
+                        ChartName = chartData.Name;
+                        TaskCollection = chartData.Tasks ?? new List<TaskData>();
+                        ProjectStart = chartData.ProjectStart;
+                        ProjectEnd = chartData.ProjectEnd;
+                        StateHasChanged();
+                        await JSRuntime.InvokeVoidAsync("alert", "Chart loaded successfully!");
+                        return;
+                    }
+                }
+            }
+            await JSRuntime.InvokeVoidAsync("alert", "No saved chart found!");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading chart: {ex.Message}");
+        }
+    }
+
+    private void ActionCompleteHandler(GanttActionEventArgs<TaskData> args)
+    {
+        // Handle action completion events
+        StateHasChanged();
+    }
+
+    private void TaskbarEditedHandler(TaskbarEditedEventArgs<TaskData> args)
+    {
+        // Handle taskbar edit events
+        StateHasChanged();
+    }
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+}
