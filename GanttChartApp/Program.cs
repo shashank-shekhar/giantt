@@ -19,6 +19,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions
 // Add Syncfusion Blazor service
 builder.Services.AddSyncfusionBlazor();
 
+// Set Syncfusion license key (replace with your license key if you have one)
+// Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("YOUR_LICENSE_KEY");
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
