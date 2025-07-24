@@ -7,6 +7,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Configure circuit options for detailed errors in development
+builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(options =>
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        options.DetailedErrors = true;
+    }
+});
+
 // Add Syncfusion Blazor service
 builder.Services.AddSyncfusionBlazor();
 
