@@ -16,8 +16,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions
     }
 });
 
-// Add Syncfusion Blazor service
+// Add Syncfusion Blazor service and export services
 builder.Services.AddSyncfusionBlazor();
+builder.Services.AddMemoryCache();
 
 // Get Syncfusion license key from user secrets
 var syncfusionLicenseKey = builder.Configuration["Syncfusion:LicenseKey"];

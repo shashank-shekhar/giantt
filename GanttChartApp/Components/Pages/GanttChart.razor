@@ -1,5 +1,6 @@
 @page "/"
 @using Syncfusion.Blazor.Gantt
+@using Syncfusion.Blazor.Grids
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.JSInterop
 @rendermode InteractiveServer
@@ -23,7 +24,15 @@
     <button class="btn btn-success" @onclick="AddTask">Add Task</button>
 </div>
 
-<SfGantt TValue="TaskData"
+<div class="mb-3">
+    <h5>Export Options:</h5>
+    <button class="btn btn-outline-danger" @onclick="ExportToPdf">Export to PDF</button>
+    <button class="btn btn-outline-success" @onclick="ExportToExcel">Export to Excel</button>
+    <button class="btn btn-outline-primary" @onclick="ExportToCsv">Export to CSV</button>
+</div>
+
+<SfGantt @ref="GanttRef"
+         TValue="TaskData"
          DataSource="@TaskCollection" 
          Height="600px" 
          Width="100%"
@@ -34,6 +43,8 @@
          AllowResizing="true"
          ShowColumnMenu="true"
          AllowFiltering="true"
+         AllowPdfExport="true"
+         AllowExcelExport="true"
          ProjectStartDate="@ProjectStart"
          ProjectEndDate="@ProjectEnd">
     <GanttTaskFields Id="TaskId" 
@@ -64,6 +75,7 @@
 </SfGantt>
 
 @code {
+    private SfGantt<TaskData> GanttRef = default!;
     private List<TaskData> TaskCollection = new();
     private string ChartName = "My Gantt Chart";
     private int SelectedRowIndex = -1;
@@ -175,6 +187,43 @@
     {
         // Handle action completion events
         StateHasChanged();
+    }
+
+    // Export Methods
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            await GanttRef.ExportToPdfAsync();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error exporting to PDF: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            await GanttRef.ExportToExcelAsync();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error exporting to Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToCsv()
+    {
+        try
+        {
+            await GanttRef.ExportToCsvAsync();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error exporting to CSV: {ex.Message}");
+        }
     }
 
     [Inject]
