@@ -182,7 +182,45 @@
 
     private void ActionCompleteHandler(GanttActionEventArgs<TaskData> args)
     {
-        // Handle action completion events
+        // Sync TaskCollection with the actual data in the Gantt chart
+        if (args.RequestType == Syncfusion.Blazor.Gantt.Action.Add && args.Data != null)
+        {
+            // Task was added
+            var newTask = args.Data as TaskData;
+            if (newTask != null && !TaskCollection.Any(t => t.TaskId == newTask.TaskId))
+            {
+                TaskCollection.Add(newTask);
+            }
+        }
+        else if (args.RequestType == Syncfusion.Blazor.Gantt.Action.Save && args.Data != null)
+        {
+            // Task was edited/updated
+            var editedTask = args.Data as TaskData;
+            if (editedTask != null)
+            {
+                var existingTask = TaskCollection.FirstOrDefault(t => t.TaskId == editedTask.TaskId);
+                if (existingTask != null)
+                {
+                    // Update the existing task with new values
+                    existingTask.TaskName = editedTask.TaskName;
+                    existingTask.StartDate = editedTask.StartDate;
+                    existingTask.EndDate = editedTask.EndDate;
+                    existingTask.Duration = editedTask.Duration;
+                    existingTask.Progress = editedTask.Progress;
+                    existingTask.ParentId = editedTask.ParentId;
+                }
+            }
+        }
+        else if (args.RequestType == Syncfusion.Blazor.Gantt.Action.Delete && args.Data != null)
+        {
+            // Task was deleted
+            var deletedTask = args.Data as TaskData;
+            if (deletedTask != null)
+            {
+                TaskCollection.RemoveAll(t => t.TaskId == deletedTask.TaskId);
+            }
+        }
+        
         StateHasChanged();
     }
 
