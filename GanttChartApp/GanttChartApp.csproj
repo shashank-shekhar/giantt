@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Syncfusion.Blazor.Gantt" Version="30.1.40" />
     <PackageReference Include="Syncfusion.Blazor.Themes" Version="30.1.40" />
+    <PackageReference Include="Syncfusion.Blazor.Popups" Version="30.1.40" />
   </ItemGroup>
 
 </Project>

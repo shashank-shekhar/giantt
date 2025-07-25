@@ -1,6 +1,9 @@
 @page "/"
 @using Syncfusion.Blazor.Gantt
 @using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.JSInterop
 @rendermode InteractiveServer
@@ -69,13 +72,86 @@
     </GanttEvents>
 </SfGantt>
 
+<!-- Save Dialog -->
+<SfDialog @ref="SaveDialogRef" Width="400px" Height="300px" IsModal="true" Visible="false" ShowCloseIcon="true">
+    <DialogTemplates>
+        <Header>Save Gantt Chart</Header>
+        <Content>
+            <div class="form-group mb-3">
+                <label for="saveChartName" class="form-label">Chart Name:</label>
+                <SfTextBox @bind-Value="SaveChartName" ID="saveChartName" Placeholder="Enter chart name" CssClass="form-control"></SfTextBox>
+            </div>
+            <div class="form-group mb-3">
+                <label for="saveDescription" class="form-label">Description (Optional):</label>
+                <SfTextBox @bind-Value="SaveDescription" ID="saveDescription" Placeholder="Enter description" CssClass="form-control" Multiline="true"></SfTextBox>
+            </div>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Save" IsPrimary="true" OnClick="@SaveChartConfirm" />
+        <DialogButton Content="Cancel" OnClick="@CloseSaveDialog" />
+    </DialogButtons>
+</SfDialog>
+
+<!-- Load Dialog -->
+<SfDialog @ref="LoadDialogRef" Width="500px" Height="400px" IsModal="true" Visible="false" ShowCloseIcon="true">
+    <DialogTemplates>
+        <Header>Load Gantt Chart</Header>
+        <Content>
+            <div class="mb-3">
+                <label class="form-label">Select a chart to load:</label>
+            </div>
+            @if (SavedCharts.Any())
+            {
+                <div class="list-group" style="max-height: 250px; overflow-y: auto;">
+                    @foreach (var chart in SavedCharts)
+                    {
+                        <div class="list-group-item @(SelectedChartId == chart.Id ? "active" : "")" 
+                             @onclick="() => SelectChart(chart.Id)" 
+                             style="cursor: pointer;">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">@chart.Name</h6>
+                                <small>@chart.CreatedDate.ToString("MM/dd/yyyy HH:mm")</small>
+                            </div>
+                            @if (!string.IsNullOrEmpty(chart.Description))
+                            {
+                                <p class="mb-1">@chart.Description</p>
+                            }
+                            <small>Tasks: @chart.Tasks.Count</small>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No saved charts found.
+                </div>
+            }
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Load" IsPrimary="true" OnClick="@LoadChartConfirm" Disabled="@(string.IsNullOrEmpty(SelectedChartId))" />
+        <DialogButton Content="Delete" CssClass="btn-danger" OnClick="@DeleteChartConfirm" Disabled="@(string.IsNullOrEmpty(SelectedChartId))" />
+        <DialogButton Content="Cancel" OnClick="@CloseLoadDialog" />
+    </DialogButtons>
+</SfDialog>
+
 @code {
     private SfGantt<TaskData> GanttRef = default!;
+    private SfDialog SaveDialogRef = default!;
+    private SfDialog LoadDialogRef = default!;
     private List<TaskData> TaskCollection = new();
     private string ChartName = "My Gantt Chart";
     private int SelectedRowIndex = -1;
     private DateTime ProjectStart = DateTime.Today;
     private DateTime ProjectEnd = DateTime.Today.AddDays(30);
+
+    // Dialog-related variables
+    private string SaveChartName = "";
+    private string SaveDescription = "";
+    private string SelectedChartId = "";
+    private List<GanttChartData> SavedCharts = new();
 
     // Toolbar configuration with all standard buttons
     private List<string> ToolbarItems = new List<string>()
@@ -107,60 +183,16 @@
 
     private async Task SaveChart()
     {
-        try
-        {
-            var chartId = Guid.NewGuid().ToString();
-            var chartData = new GanttChartData
-            {
-                Id = chartId,
-                Name = ChartName,
-                Tasks = TaskCollection,
-                CreatedDate = DateTime.Now,
-                ProjectStart = ProjectStart,
-                ProjectEnd = ProjectEnd
-            };
-
-            var json = System.Text.Json.JsonSerializer.Serialize(chartData);
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", $"gantt_chart_{chartId}", json);
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "gantt_chart_current", chartId);
-            
-            await JSRuntime.InvokeVoidAsync("alert", $"Chart saved successfully! Chart ID: {chartId}");
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error saving chart: {ex.Message}");
-        }
+        SaveChartName = ChartName;
+        SaveDescription = "";
+        await SaveDialogRef.ShowAsync();
     }
 
     private async Task LoadChart()
     {
-        try
-        {
-            var currentChartId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "gantt_chart_current");
-            if (!string.IsNullOrEmpty(currentChartId))
-            {
-                var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", $"gantt_chart_{currentChartId}");
-                if (!string.IsNullOrEmpty(json))
-                {
-                    var chartData = System.Text.Json.JsonSerializer.Deserialize<GanttChartData>(json);
-                    if (chartData != null)
-                    {
-                        ChartName = chartData.Name;
-                        TaskCollection = chartData.Tasks ?? new List<TaskData>();
-                        ProjectStart = chartData.ProjectStart;
-                        ProjectEnd = chartData.ProjectEnd;
-                        StateHasChanged();
-                        await JSRuntime.InvokeVoidAsync("alert", "Chart loaded successfully!");
-                        return;
-                    }
-                }
-            }
-            await JSRuntime.InvokeVoidAsync("alert", "No saved chart found!");
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error loading chart: {ex.Message}");
-        }
+        await LoadSavedCharts();
+        SelectedChartId = "";
+        await LoadDialogRef.ShowAsync();
     }
 
     private void ActionCompleteHandler(GanttActionEventArgs<TaskData> args)
@@ -236,7 +268,147 @@
         }
     }
 
+    // Dialog-related methods
+    private async Task SaveChartConfirm()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(SaveChartName))
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Please enter a chart name.");
+                return;
+            }
 
+            var chartId = Guid.NewGuid().ToString();
+            var chartData = new GanttChartData
+            {
+                Id = chartId,
+                Name = SaveChartName.Trim(),
+                Description = SaveDescription?.Trim() ?? "",
+                Tasks = TaskCollection,
+                CreatedDate = DateTime.Now,
+                ProjectStart = ProjectStart,
+                ProjectEnd = ProjectEnd
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(chartData);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", $"gantt_chart_{chartId}", json);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "gantt_chart_current", chartId);
+            
+            ChartName = SaveChartName.Trim();
+            await SaveDialogRef.HideAsync();
+            await JSRuntime.InvokeVoidAsync("alert", "Chart saved successfully!");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error saving chart: {ex.Message}");
+        }
+    }
+
+    private async Task CloseSaveDialog()
+    {
+        await SaveDialogRef.HideAsync();
+    }
+
+    private async Task LoadSavedCharts()
+    {
+        try
+        {
+            SavedCharts.Clear();
+            var keys = await JSRuntime.InvokeAsync<string[]>("eval", "Object.keys(localStorage).filter(key => key.startsWith('gantt_chart_') && key !== 'gantt_chart_current')");
+            
+            foreach (var key in keys)
+            {
+                var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", key);
+                if (!string.IsNullOrEmpty(json))
+                {
+                    try
+                    {
+                        var chartData = System.Text.Json.JsonSerializer.Deserialize<GanttChartData>(json);
+                        if (chartData != null)
+                        {
+                            SavedCharts.Add(chartData);
+                        }
+                    }
+                    catch
+                    {
+                        // Skip invalid chart data
+                    }
+                }
+            }
+            
+            SavedCharts = SavedCharts.OrderByDescending(c => c.CreatedDate).ToList();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading saved charts: {ex.Message}");
+        }
+    }
+
+    private void SelectChart(string chartId)
+    {
+        SelectedChartId = chartId;
+        StateHasChanged();
+    }
+
+    private async Task LoadChartConfirm()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(SelectedChartId))
+            {
+                return;
+            }
+
+            var selectedChart = SavedCharts.FirstOrDefault(c => c.Id == SelectedChartId);
+            if (selectedChart != null)
+            {
+                ChartName = selectedChart.Name;
+                TaskCollection = selectedChart.Tasks ?? new List<TaskData>();
+                ProjectStart = selectedChart.ProjectStart;
+                ProjectEnd = selectedChart.ProjectEnd;
+                
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "gantt_chart_current", SelectedChartId);
+                await LoadDialogRef.HideAsync();
+                StateHasChanged();
+                await JSRuntime.InvokeVoidAsync("alert", "Chart loaded successfully!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading chart: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteChartConfirm()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(SelectedChartId))
+            {
+                return;
+            }
+
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this chart?");
+            if (confirmed)
+            {
+                await JSRuntime.InvokeVoidAsync("localStorage.removeItem", $"gantt_chart_{SelectedChartId}");
+                await LoadSavedCharts();
+                SelectedChartId = "";
+                StateHasChanged();
+                await JSRuntime.InvokeVoidAsync("alert", "Chart deleted successfully!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error deleting chart: {ex.Message}");
+        }
+    }
+
+    private async Task CloseLoadDialog()
+    {
+        await LoadDialogRef.HideAsync();
+    }
 
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;

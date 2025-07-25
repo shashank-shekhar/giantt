@@ -26,6 +26,8 @@ namespace GanttChartApp.Models
         
         public string Name { get; set; } = string.Empty;
         
+        public string Description { get; set; } = string.Empty;
+        
         public List<TaskData> Tasks { get; set; } = new();
         
         public DateTime CreatedDate { get; set; }
