@@ -89,16 +89,8 @@
 
     private void LoadDefaultTasks()
     {
-        TaskCollection = new List<TaskData>()
-        {
-            new TaskData() { TaskId = 1, TaskName = "Project Planning", StartDate = DateTime.Today, EndDate = DateTime.Today.AddDays(5), Duration = "5 days", Progress = 100, ParentId = null },
-            new TaskData() { TaskId = 2, TaskName = "Define Requirements", StartDate = DateTime.Today, EndDate = DateTime.Today.AddDays(2), Duration = "2 days", Progress = 100, ParentId = 1 },
-            new TaskData() { TaskId = 3, TaskName = "Create Timeline", StartDate = DateTime.Today.AddDays(2), EndDate = DateTime.Today.AddDays(5), Duration = "3 days", Progress = 50, ParentId = 1 },
-            new TaskData() { TaskId = 4, TaskName = "Development Phase", StartDate = DateTime.Today.AddDays(5), EndDate = DateTime.Today.AddDays(20), Duration = "15 days", Progress = 30, ParentId = null },
-            new TaskData() { TaskId = 5, TaskName = "Frontend Development", StartDate = DateTime.Today.AddDays(5), EndDate = DateTime.Today.AddDays(12), Duration = "7 days", Progress = 60, ParentId = 4 },
-            new TaskData() { TaskId = 6, TaskName = "Backend Development", StartDate = DateTime.Today.AddDays(8), EndDate = DateTime.Today.AddDays(15), Duration = "7 days", Progress = 20, ParentId = 4 },
-            new TaskData() { TaskId = 7, TaskName = "Testing", StartDate = DateTime.Today.AddDays(15), EndDate = DateTime.Today.AddDays(20), Duration = "5 days", Progress = 0, ParentId = 4 }
-        };
+        // Start with an empty task collection
+        TaskCollection = new List<TaskData>();
     }
 
     private void CreateNewChart()
