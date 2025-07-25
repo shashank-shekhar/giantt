@@ -19,8 +19,16 @@ builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions
 // Add Syncfusion Blazor service
 builder.Services.AddSyncfusionBlazor();
 
-// Set Syncfusion license key (replace with your license key if you have one)
-// Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("YOUR_LICENSE_KEY");
+// Get Syncfusion license key from user secrets
+var syncfusionLicenseKey = builder.Configuration["Syncfusion:LicenseKey"];
+if (!string.IsNullOrEmpty(syncfusionLicenseKey))
+{
+    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicenseKey);
+}
+else if (builder.Environment.IsDevelopment())
+{
+    Console.WriteLine("Warning: Syncfusion license key not found in user secrets");
+}
 
 var app = builder.Build();
 
