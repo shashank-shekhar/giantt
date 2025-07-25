@@ -5,6 +5,7 @@
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Inputs
 @using System.ComponentModel.DataAnnotations
+@using System.Web
 @using Microsoft.JSInterop
 @rendermode InteractiveServer
 
@@ -16,6 +17,7 @@
     <button class="btn btn-primary" @onclick="CreateNewChart">Create New Chart</button>
     <button class="btn btn-secondary" @onclick="SaveChart">Save Chart</button>
     <button class="btn btn-info" @onclick="LoadChart">Load Chart</button>
+    <button class="btn btn-success" @onclick="ShareChart">Share Chart</button>
 </div>
 
 <div class="mb-3">
@@ -137,10 +139,52 @@
     </DialogButtons>
 </SfDialog>
 
+<!-- Share Dialog -->
+<SfDialog @ref="ShareDialogRef" Width="500px" Height="350px" IsModal="true" Visible="false" ShowCloseIcon="true">
+    <DialogTemplates>
+        <Header>Share Gantt Chart</Header>
+        <Content>
+            <div class="mb-3">
+                <label class="form-label">Share URL:</label>
+                <div class="input-group">
+                    <SfTextBox @bind-Value="ShareUrl" ID="shareUrl" Readonly="true" CssClass="form-control"></SfTextBox>
+                    <button class="btn btn-outline-secondary" type="button" @onclick="CopyShareUrl">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
+            <div class="mb-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle"></i> 
+                    This URL contains your chart data and can be shared with others. 
+                    Anyone with this link can view and edit the chart.
+                </small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Chart Preview:</label>
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">@ChartName</h6>
+                        <p class="card-text">
+                            <small class="text-muted">Tasks: @TaskCollection.Count</small><br>
+                            <small class="text-muted">Created: @DateTime.Now.ToString("MM/dd/yyyy HH:mm")</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Open in New Tab" OnClick="@OpenShareUrlInNewTab" />
+        <DialogButton Content="Close" OnClick="@CloseShareDialog" />
+    </DialogButtons>
+</SfDialog>
+
 @code {
     private SfGantt<TaskData> GanttRef = default!;
     private SfDialog SaveDialogRef = default!;
     private SfDialog LoadDialogRef = default!;
+    private SfDialog ShareDialogRef = default!;
     private List<TaskData> TaskCollection = new();
     private string ChartName = "My Gantt Chart";
     private int SelectedRowIndex = -1;
@@ -151,6 +195,7 @@
     private string SaveChartName = "";
     private string SaveDescription = "";
     private string SelectedChartId = "";
+    private string ShareUrl = "";
     private List<GanttChartData> SavedCharts = new();
 
     // Toolbar configuration with all standard buttons
@@ -161,9 +206,10 @@
         "PrevTimeSpan", "NextTimeSpan", "ExcelExport", "CsvExport", "PdfExport"
     };
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         LoadDefaultTasks();
+        await LoadSharedChartFromUrl();
     }
 
     private void LoadDefaultTasks()
@@ -410,6 +456,94 @@
         await LoadDialogRef.HideAsync();
     }
 
+    // Share-related methods
+    private async Task ShareChart()
+    {
+        try
+        {
+            var chartData = new GanttChartData
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = ChartName,
+                Description = $"Shared chart with {TaskCollection.Count} tasks",
+                Tasks = TaskCollection,
+                CreatedDate = DateTime.Now,
+                ProjectStart = ProjectStart,
+                ProjectEnd = ProjectEnd
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(chartData);
+            var base64Data = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
+            
+            var baseUrl = Navigation.BaseUri.TrimEnd('/');
+            ShareUrl = $"{baseUrl}?data={base64Data}";
+            
+            await ShareDialogRef.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error creating share URL: {ex.Message}");
+        }
+    }
+
+    private async Task LoadSharedChartFromUrl()
+    {
+        try
+        {
+            var uri = new Uri(Navigation.Uri);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var dataParam = query["data"];
+            
+            if (!string.IsNullOrEmpty(dataParam))
+            {
+                var jsonBytes = Convert.FromBase64String(dataParam);
+                var json = System.Text.Encoding.UTF8.GetString(jsonBytes);
+                var chartData = System.Text.Json.JsonSerializer.Deserialize<GanttChartData>(json);
+                
+                if (chartData != null)
+                {
+                    ChartName = chartData.Name;
+                    TaskCollection = chartData.Tasks ?? new List<TaskData>();
+                    ProjectStart = chartData.ProjectStart;
+                    ProjectEnd = chartData.ProjectEnd;
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Silently ignore errors when loading shared charts
+            // This allows the app to work normally even with invalid share URLs
+        }
+    }
+
+    private async Task CopyShareUrl()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", ShareUrl);
+            await JSRuntime.InvokeVoidAsync("alert", "Share URL copied to clipboard!");
+        }
+        catch (Exception)
+        {
+            // Fallback for browsers that don't support clipboard API
+            await JSRuntime.InvokeVoidAsync("prompt", "Copy this URL:", ShareUrl);
+        }
+    }
+
+    private async Task OpenShareUrlInNewTab()
+    {
+        await JSRuntime.InvokeVoidAsync("window.open", ShareUrl, "_blank");
+    }
+
+    private async Task CloseShareDialog()
+    {
+        await ShareDialogRef.HideAsync();
+    }
+
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
+    
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
 }
