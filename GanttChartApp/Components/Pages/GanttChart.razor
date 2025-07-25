@@ -20,9 +20,7 @@
     <input type="text" class="form-control" id="chartName" @bind="ChartName" />
 </div>
 
-<div class="mb-3">
-    <button class="btn btn-success" @onclick="AddTask">Add Task</button>
-</div>
+
 
 
 
@@ -105,22 +103,7 @@
         StateHasChanged();
     }
 
-    private void AddTask()
-    {
-        var newId = TaskCollection.Count > 0 ? TaskCollection.Max(t => t.TaskId) + 1 : 1;
-        var newTask = new TaskData()
-        {
-            TaskId = newId,
-            TaskName = $"New Task {newId}",
-            StartDate = DateTime.Today,
-            EndDate = DateTime.Today.AddDays(1),
-            Duration = "1 day",
-            Progress = 0,
-            ParentId = null
-        };
-        TaskCollection.Add(newTask);
-        StateHasChanged();
-    }
+
 
     private async Task SaveChart()
     {
