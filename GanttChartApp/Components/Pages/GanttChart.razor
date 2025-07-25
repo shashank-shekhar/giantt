@@ -24,12 +24,7 @@
     <button class="btn btn-success" @onclick="AddTask">Add Task</button>
 </div>
 
-<div class="mb-3">
-    <h5>Export Options:</h5>
-    <button class="btn btn-outline-danger" @onclick="ExportToPdf">Export to PDF</button>
-    <button class="btn btn-outline-success" @onclick="ExportToExcel">Export to Excel</button>
-    <button class="btn btn-outline-primary" @onclick="ExportToCsv">Export to CSV</button>
-</div>
+
 
 <SfGantt @ref="GanttRef"
          TValue="TaskData"
@@ -45,6 +40,7 @@
          AllowFiltering="true"
          AllowPdfExport="true"
          AllowExcelExport="true"
+         Toolbar="@ToolbarItems"
          ProjectStartDate="@ProjectStart"
          ProjectEndDate="@ProjectEnd">
     <GanttTaskFields Id="TaskId" 
@@ -70,7 +66,8 @@
                        ShowDeleteConfirmDialog="true">
     </GanttEditSettings>
     <GanttEvents TValue="TaskData" 
-                 OnActionComplete="ActionCompleteHandler">
+                 OnActionComplete="ActionCompleteHandler"
+                 OnToolbarClick="ToolbarClickHandler">
     </GanttEvents>
 </SfGantt>
 
@@ -81,6 +78,14 @@
     private int SelectedRowIndex = -1;
     private DateTime ProjectStart = DateTime.Today;
     private DateTime ProjectEnd = DateTime.Today.AddDays(30);
+
+    // Toolbar configuration with all standard buttons
+    private List<string> ToolbarItems = new List<string>()
+    {
+        "Add", "Edit", "Delete", "Update", "Cancel", "Search",
+        "ExpandAll", "CollapseAll", "ZoomIn", "ZoomOut", "ZoomToFit",
+        "PrevTimeSpan", "NextTimeSpan", "ExcelExport", "CsvExport", "PdfExport"
+    };
 
     protected override void OnInitialized()
     {
@@ -181,42 +186,36 @@
         StateHasChanged();
     }
 
-    // Export Methods
-    private async Task ExportToPdf()
+    // Toolbar click handler
+    private async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
     {
         try
         {
-            await GanttRef.ExportToPdfAsync();
+            var itemId = args.Item.Id;
+            
+            // Handle export actions
+            if (itemId.Contains("excelexport"))
+            {
+                await GanttRef.ExportToExcelAsync();
+            }
+            else if (itemId.Contains("csvexport"))
+            {
+                await GanttRef.ExportToCsvAsync();
+            }
+            else if (itemId.Contains("pdfexport"))
+            {
+                await GanttRef.ExportToPdfAsync();
+            }
+            // Most toolbar actions (zoom, expand/collapse, etc.) are handled automatically by Syncfusion
+            // The toolbar items will trigger their respective built-in functionality
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error exporting to PDF: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", $"Error handling toolbar action: {ex.Message}");
         }
     }
 
-    private async Task ExportToExcel()
-    {
-        try
-        {
-            await GanttRef.ExportToExcelAsync();
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error exporting to Excel: {ex.Message}");
-        }
-    }
 
-    private async Task ExportToCsv()
-    {
-        try
-        {
-            await GanttRef.ExportToCsvAsync();
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error exporting to CSV: {ex.Message}");
-        }
-    }
 
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
