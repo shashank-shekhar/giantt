@@ -20,15 +20,22 @@ builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddMemoryCache();
 
-// Get Syncfusion license key from user secrets
-var syncfusionLicenseKey = builder.Configuration["Syncfusion:LicenseKey"];
+// Get Syncfusion license key from environment variable (for GitHub Actions) or user secrets (for local development)
+var syncfusionLicenseKey = Environment.GetEnvironmentVariable("SYNCFUSION_LICENSE_KEY") 
+                          ?? builder.Configuration["Syncfusion:LicenseKey"];
+
 if (!string.IsNullOrEmpty(syncfusionLicenseKey))
 {
     Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicenseKey);
+    Console.WriteLine("Syncfusion license key registered successfully");
 }
 else if (builder.Environment.IsDevelopment())
 {
-    Console.WriteLine("Warning: Syncfusion license key not found in user secrets");
+    Console.WriteLine("Warning: Syncfusion license key not found in environment variables or user secrets");
+}
+else
+{
+    Console.WriteLine("Warning: Syncfusion license key not configured. Some features may not work properly.");
 }
 
 var app = builder.Build();
