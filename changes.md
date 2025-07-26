@@ -38,3 +38,29 @@
 ### Final Status
 **PDF Export Button Issue: FULLY RESOLVED AND TESTED** ✅
 The highest priority issue has been completely fixed and verified working.
+
+## 2025-07-26 - Added Drag and Drop Reordering Feature ✅
+
+### New Feature
+- Added ability to reorder (drag and drop) items in the Gantt chart
+- Users can now reorganize task order by dragging rows up or down
+
+### Implementation
+- Added `AllowRowDragAndDrop="true"` property to SfGantt component
+- Drag handles (≡) now appear on the left side of each row
+- Maintains data integrity during reordering operations
+
+### Files Modified
+- `/GanttChartApp/Components/Pages/GanttChart.razor` - Added AllowRowDragAndDrop property
+
+### Usage
+1. Click and hold the drag handle (≡) icon on the left of any row
+2. Drag the row up or down to desired position
+3. Drop to reorder the tasks
+4. Gantt chart automatically updates task order
+
+### Verification ✅
+- Drag handles visible on all rows ✅
+- Reordering functionality enabled ✅
+- PDF export and other features still working ✅
+- Sample tasks display correctly with timeline ✅
