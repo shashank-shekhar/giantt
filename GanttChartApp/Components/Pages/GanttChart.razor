@@ -201,14 +201,14 @@
     // Toolbar configuration with all standard buttons including custom PDF export
     private List<object> ToolbarItems = new List<object>()
     {
-        new Syncfusion.Blazor.Navigations.ToolbarItem() { Text = "PDF Export", TooltipText = "PDF Export", Id = "PdfExport", PrefixIcon = "e-pdfexport" },
         "Add",
         "Edit",
          "Delete", "Update", "Cancel", "Search",
         "ExpandAll", "CollapseAll",
-        "ExcelExport", "CsvExport", 
         "ZoomIn", "ZoomOut", "ZoomToFit",
         "PrevTimeSpan", "NextTimeSpan", 
+        new Syncfusion.Blazor.Navigations.ToolbarItem() { Text = "PDF Export", TooltipText = "PDF Export", Id = "PdfExport", PrefixIcon = "e-pdfexport" },
+        "ExcelExport", "CsvExport", 
     };
 
     protected override async Task OnInitializedAsync()
