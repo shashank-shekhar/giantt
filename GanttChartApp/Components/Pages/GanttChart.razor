@@ -214,13 +214,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        LoadDefaultTasks();
+        // Initialize with sample tasks first (no JS interop needed)
+        LoadSampleTasks();
         await LoadSharedChartFromUrl();
     }
 
-    private void LoadDefaultTasks()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Temporarily add sample tasks for PDF export testing
+        if (firstRender)
+        {
+            // Try to load the last chart from local storage after first render
+            await LoadLastChartFromStorage();
+        }
+    }
+
+    private void LoadSampleTasks()
+    {
+        // Load sample tasks for demonstration (no JS interop needed)
         TaskCollection = new List<TaskData>
         {
             new TaskData { TaskId = 1, TaskName = "Project Planning", StartDate = DateTime.Today, EndDate = DateTime.Today.AddDays(5), Duration = "5 days", Progress = 30 },
@@ -229,6 +239,41 @@
             new TaskData { TaskId = 4, TaskName = "Testing", StartDate = DateTime.Today.AddDays(31), EndDate = DateTime.Today.AddDays(40), Duration = "10 days", Progress = 0 },
             new TaskData { TaskId = 5, TaskName = "Deployment", StartDate = DateTime.Today.AddDays(41), EndDate = DateTime.Today.AddDays(45), Duration = "5 days", Progress = 0 }
         };
+        ChartName = "Sample Gantt Chart";
+    }
+
+    private async Task LoadLastChartFromStorage()
+    {
+        try
+        {
+            // Get the current chart ID from local storage
+            var currentChartId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "gantt_chart_current");
+            
+            if (!string.IsNullOrEmpty(currentChartId))
+            {
+                // Try to load the chart data
+                var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", $"gantt_chart_{currentChartId}");
+                
+                if (!string.IsNullOrEmpty(json))
+                {
+                    var chartData = System.Text.Json.JsonSerializer.Deserialize<GanttChartData>(json);
+                    if (chartData != null)
+                    {
+                        ChartName = chartData.Name;
+                        TaskCollection = chartData.Tasks ?? new List<TaskData>();
+                        ProjectStart = chartData.ProjectStart;
+                        ProjectEnd = chartData.ProjectEnd;
+                        Console.WriteLine($"Loaded last chart: {ChartName} with {TaskCollection.Count} tasks");
+                        StateHasChanged(); // Trigger UI update after loading from storage
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading last chart from storage: {ex.Message}");
+            // If loading fails, TaskCollection will remain null and sample tasks will be loaded
+        }
     }
 
     private void CreateNewChart()
