@@ -198,12 +198,17 @@
     private string ShareUrl = "";
     private List<GanttChartData> SavedCharts = new();
 
-    // Toolbar configuration with all standard buttons
-    private List<string> ToolbarItems = new List<string>()
+    // Toolbar configuration with all standard buttons including custom PDF export
+    private List<object> ToolbarItems = new List<object>()
     {
-        "Add", "Edit", "Delete", "Update", "Cancel", "Search",
-        "ExpandAll", "CollapseAll", "ZoomIn", "ZoomOut", "ZoomToFit",
-        "PrevTimeSpan", "NextTimeSpan", "ExcelExport", "CsvExport", "PdfExport"
+        new Syncfusion.Blazor.Navigations.ToolbarItem() { Text = "PDF Export", TooltipText = "PDF Export", Id = "PdfExport", PrefixIcon = "e-pdfexport" },
+        "Add",
+        "Edit",
+         "Delete", "Update", "Cancel", "Search",
+        "ExpandAll", "CollapseAll",
+        "ExcelExport", "CsvExport", 
+        "ZoomIn", "ZoomOut", "ZoomToFit",
+        "PrevTimeSpan", "NextTimeSpan", 
     };
 
     protected override async Task OnInitializedAsync()
@@ -214,8 +219,15 @@
 
     private void LoadDefaultTasks()
     {
-        // Start with an empty task collection
-        TaskCollection = new List<TaskData>();
+        // Temporarily add sample tasks for PDF export testing
+        TaskCollection = new List<TaskData>
+        {
+            new TaskData { TaskId = 1, TaskName = "Project Planning", StartDate = DateTime.Today, EndDate = DateTime.Today.AddDays(5), Duration = "5 days", Progress = 30 },
+            new TaskData { TaskId = 2, TaskName = "Design Phase", StartDate = DateTime.Today.AddDays(6), EndDate = DateTime.Today.AddDays(15), Duration = "10 days", Progress = 60 },
+            new TaskData { TaskId = 3, TaskName = "Development", StartDate = DateTime.Today.AddDays(16), EndDate = DateTime.Today.AddDays(30), Duration = "15 days", Progress = 20 },
+            new TaskData { TaskId = 4, TaskName = "Testing", StartDate = DateTime.Today.AddDays(31), EndDate = DateTime.Today.AddDays(40), Duration = "10 days", Progress = 0 },
+            new TaskData { TaskId = 5, TaskName = "Deployment", StartDate = DateTime.Today.AddDays(41), EndDate = DateTime.Today.AddDays(45), Duration = "5 days", Progress = 0 }
+        };
     }
 
     private void CreateNewChart()
@@ -291,7 +303,8 @@
         try
         {
             var itemId = args.Item.Id;
-            
+            // console log itemId
+            Console.WriteLine(itemId);
             // Handle export actions
             if (itemId.Contains("excelexport"))
             {
@@ -301,7 +314,7 @@
             {
                 await GanttRef.ExportToCsvAsync();
             }
-            else if (itemId.Contains("pdfexport"))
+            else if (itemId.Contains("PdfExport"))
             {
                 await GanttRef.ExportToPdfAsync();
             }
