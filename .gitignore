@@ -1,2 +1,8 @@
 obj/
 bin/
+test-publish/
+wasm-publish/
+packages/
+final-publish/
+.DS_Store
+.idea

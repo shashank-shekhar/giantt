@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="GanttChartApp.Tests/GanttChartApp.Tests.csproj" />
+  <Project Path="GanttChartApp/GanttChartApp.csproj" />
+</Solution>

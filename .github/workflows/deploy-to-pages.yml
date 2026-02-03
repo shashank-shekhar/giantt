@@ -27,36 +27,32 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '9.0.x'
+        dotnet-version: '10.0.x'
         
     - name: Setup Pages
       uses: actions/configure-pages@v4
       
     - name: Restore dependencies
       run: dotnet restore GanttChartApp/GanttChartApp.csproj
-      
+
     - name: Build application
       run: dotnet build GanttChartApp/GanttChartApp.csproj --configuration Release --no-restore
-      env:
-        SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
-      
+        
     - name: Publish application
       run: dotnet publish GanttChartApp/GanttChartApp.csproj --configuration Release --output ./publish --no-build
-      env:
-        SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
         
     - name: Configure for GitHub Pages
       run: |
-        # Copy .nojekyll file to prevent Jekyll processing
-        cp ./publish/wwwroot/.nojekyll ./publish/wwwroot/.nojekyll
-        
-        # Create 404.html for client-side routing
+        # Create 404.html for client-side routing (Blazor WebAssembly SPA)
         cp ./publish/wwwroot/index.html ./publish/wwwroot/404.html
         
         # Update base href for GitHub Pages subdirectory (repository name)
         REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f2)
         sed -i "s|<base href=\"/\" />|<base href=\"/\${REPO_NAME}/\" />|g" ./publish/wwwroot/index.html
         sed -i "s|<base href=\"/\" />|<base href=\"/\${REPO_NAME}/\" />|g" ./publish/wwwroot/404.html
+        
+        # Verify .nojekyll file exists
+        ls -la ./publish/wwwroot/.nojekyll || echo "Warning: .nojekyll file not found"
         
         # List files for debugging
         echo "Published files:"

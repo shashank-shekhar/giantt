@@ -1,60 +1,21 @@
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using GanttChartApp.Components;
 using Syncfusion.Blazor;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+// Set the root component
+builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Configure circuit options for detailed errors in development
-builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(options =>
-{
-    if (builder.Environment.IsDevelopment())
-    {
-        options.DetailedErrors = true;
-    }
-});
+// Add HTTP client for API calls (if needed)
+builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-// Add Syncfusion Blazor service and export services
+// Add Syncfusion Blazor service
+// Licensed Syncfusion NuGet packages are restored from the GitHub Packages feed (see nuget.config)
 builder.Services.AddSyncfusionBlazor();
-builder.Services.AddMemoryCache();
 
-// Get Syncfusion license key from environment variable (for GitHub Actions) or user secrets (for local development)
-var syncfusionLicenseKey = Environment.GetEnvironmentVariable("SYNCFUSION_LICENSE_KEY") 
-                          ?? builder.Configuration["Syncfusion:LicenseKey"];
+var host = builder.Build();
 
-if (!string.IsNullOrEmpty(syncfusionLicenseKey))
-{
-    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicenseKey);
-    Console.WriteLine("Syncfusion license key registered successfully");
-}
-else if (builder.Environment.IsDevelopment())
-{
-    Console.WriteLine("Warning: Syncfusion license key not found in environment variables or user secrets");
-}
-else
-{
-    Console.WriteLine("Warning: Syncfusion license key not configured. Some features may not work properly.");
-}
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-
-
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-app.Run();
+await host.RunAsync();

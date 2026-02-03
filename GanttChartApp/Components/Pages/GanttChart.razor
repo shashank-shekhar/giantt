@@ -7,7 +7,7 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Web
 @using Microsoft.JSInterop
-@rendermode InteractiveServer
+
 
 <PageTitle>Gantt Chart</PageTitle>
 
@@ -550,7 +550,7 @@
         try
         {
             var uri = new Uri(Navigation.Uri);
-            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var query = HttpUtility.ParseQueryString(uri.Query);
             var dataParam = query["data"];
             
             if (!string.IsNullOrEmpty(dataParam))
