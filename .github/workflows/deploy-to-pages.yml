@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
   pages: write
   id-token: write
 
@@ -33,7 +34,10 @@ jobs:
       uses: actions/configure-pages@v4
       
     - name: Restore dependencies
-      run: dotnet restore GanttChartApp/GanttChartApp.csproj
+      run: dotnet restore GanttChartApp/GanttChartApp.csproj --verbosity normal
+      env:
+        NUGET_USERNAME: ${{ github.actor }}
+        NUGET_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build application
       run: dotnet build GanttChartApp/GanttChartApp.csproj --configuration Release --no-restore
@@ -47,12 +51,12 @@ jobs:
         cp ./publish/wwwroot/index.html ./publish/wwwroot/404.html
         
         # Update base href for GitHub Pages subdirectory (repository name)
-        REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f2)
-        sed -i "s|<base href=\"/\" />|<base href=\"/\${REPO_NAME}/\" />|g" ./publish/wwwroot/index.html
-        sed -i "s|<base href=\"/\" />|<base href=\"/\${REPO_NAME}/\" />|g" ./publish/wwwroot/404.html
-        
-        # Verify .nojekyll file exists
-        ls -la ./publish/wwwroot/.nojekyll || echo "Warning: .nojekyll file not found"
+        REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+        sed -i 's|<base href="/" />|<base href="/'"$REPO_NAME"'/" />|g' ./publish/wwwroot/index.html
+        sed -i 's|<base href="/" />|<base href="/'"$REPO_NAME"'/" />|g' ./publish/wwwroot/404.html
+
+        # Verify .nojekyll file exists (required for _framework directory)
+        test -f ./publish/wwwroot/.nojekyll || { echo "Error: .nojekyll file not found"; exit 1; }
         
         # List files for debugging
         echo "Published files:"
